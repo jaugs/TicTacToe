@@ -50,13 +50,10 @@ class Player {
     }
   }
   selectx() {
-
-  }
-}
+}}
 
 class GameBoard {
    static _newBoard = new Array(9);
-
    static _checkIfCellEmpty = (index) => {
     if (index || index == 0) {
       return !this.newBoard[index] ? true : false;
@@ -65,53 +62,31 @@ class GameBoard {
     }
   }
 
-  // static _endTheGame() {
-  //   DomElement.board.removeEventListener('click', DomListener.gridCellClick);
-  //   uiController.rightSectionController.removeActivePlayerMark();
-  // }
-
   static resetBoard = () => {
     this.newBoard = new Array(9);
     uiController.rightSectionController.cleanGameBoard();
   }
 
 
-
-
 static fillCell = (index) => {
   const currPlayer = GameLogic.currentPlayer();
   const playerMark = currPlayer.tally;
-  //console.log(currPlayer);
-  //console.log(playerMark);
-  //console.log(_newBoard);
   GameLogic.checkMove(index, playerMark);
-    eventHandler.board[index].classList.add(playerMark);
-  
-  GameLogic.winLogic();
-    //this.newBoard.classList.add('playerMark');
-
-   
-    //select next player when the move was right else display error
-    GameLogic.whoIsNext();
-
-
-  // if (this._checkForWinner()) {
-  //   GameLogic.endRound(currPlayer);
-  // } else {
-  //   this._checkForRemainingEmptyCells();
-  // }
-
+  eventHandler.board[index].classList.add(playerMark);
+  GameLogic.winLogic(index, playerMark);
+  GameLogic.whoIsNext();
 };
 }
 
 const GameLogic = (() => {
  
+  let xArr = [];
+  let oArr = [];
   let whoIsNextIndex = 0;
   let round = 1;
   let draw = 0;
   let player_1 = new Player(player1.innerText, 'x');
   let player_2 = new Player(player2.innerText, 'o');
-
 
   const currentPlayer = () => {
     const player = [player_1, player_2][whoIsNextIndex];
@@ -128,8 +103,6 @@ const GameLogic = (() => {
     whoIsNextIndex = whoIsNextIndex === 0 ? 1 : 0;
    //[player_1, player_2][whoIsNextIndex].select()
   };
-
-
 
   const newRound = () => {
     DomElement.roundEnded_dialog.style.display = 'none';
@@ -148,16 +121,12 @@ const GameLogic = (() => {
         player_2.won = true;
       }
     }
-
-  
-
     round++;
-    //eventHandler.roundEnded_dialog.style.display = 'flex';
-   // uiController.rightSectionController.displayRoundEndDialog(winner);
+   
   };
 
   const checkMove = (index, playerMark) => {
-    console.log(eventHandler.board[0]);
+   // console.log(eventHandler.board[0]);
     let notMark;
     if (playerMark == 'x') {
      notMark = 'o';
@@ -174,69 +143,125 @@ const GameLogic = (() => {
     }
   };
 
-const winLogic = () => {
+const winLogic = (index, playerMark) => {
 
- let winCombos = Object;
- winCombos = {
-    row1: [0, 1, 2],
-    row2: [3, 4, 5],
-    row3: [6, 7, 8],
-    column1: [0, 3, 6],
-    column2: [1, 4, 7],
-    column3: [2, 5, 8],
-    diag1: [0, 4, 8],
-    diag2: [2, 4, 6]
-  };
+if (playerMark == 'x') {
+  xArr.push(index);
+} else {
+  oArr.push(index);
+}
 
-for (i=0; i < 4; i++) {
-  console.log(Object.keys(winCombos));
-};
+winningFormulas = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+];
 
+//function for generating cominations of array elements found on SO
+function generateCombinations(sourceArray, comboLength) {
+  const sourceLength = sourceArray.length;
+  if (comboLength > sourceLength) return [];
+  const combos = []; // Stores valid combinations as they are generated.
+  // Accepts a partial combination, an index into sourceArray, 
+  // and the number of elements required to be added to create a full-length combination.
+  // Called recursively to build combinations, adding subsequent elements at each call depth.
+  const makeNextCombos = (workingCombo, currentIndex, remainingCount) => {
+    const oneAwayFromComboLength = remainingCount == 1;
+    // For each element that remaines to be added to the working combination.
+    for (let sourceIndex = currentIndex; sourceIndex < sourceLength; sourceIndex++) {
+      // Get next (possibly partial) combination.
+      const next = [ ...workingCombo, sourceArray[sourceIndex] ];
+      if (oneAwayFromComboLength) {
+        // Combo of right length found, save it.
+        combos.push(next);
+      } else {
+        // Otherwise go deeper to add more elements to the current partial combination.
+        makeNextCombos(next, sourceIndex + 1, remainingCount - 1);
+      }}}
+  makeNextCombos([], 0, comboLength);
+  return combos;
+}
 
-  // Object.keys(winCombos).forEach(entry => {
-  //   const [ value] = entry;
-  //   console.log( value);
-  // })
+if (xArr.length > 2) {
+  let xCombos = generateCombinations(xArr, 3);
+  for (let i = 0; i < winningFormulas.length; i++) {
+    const formula = winningFormulas[i];
+    for (let k = 0; k < xCombos.length; k++) {
+    let x_result = formula.every((item) => xCombos[k].includes(item));
+      if (x_result == true) {
+        xArr = [];
+        oArr = [];
+        xCombos = [];
+        index = 0;
+        whoIsNext();
+        winGame('xwins');
+      } }};
+  }
 
+  if (oArr.length > 2) {
+    let oCombos = generateCombinations(oArr, 3);
+    for (let i = 0; i < winningFormulas.length; i++) {
+      const formula = winningFormulas[i];
+      for (let k = 0; k < oCombos.length; k++) {
+      let o_result = formula.every((item) => oCombos[k].includes(item));
+        console.log(o_result);
+        if (o_result == true) {
+          xArr = [];
+          oArr = [];
+          oCombos = [];
+          index = 0;
+          whoIsNext();
+          winGame('owins');
+        } }};
+    }
+}
+  
+const winGame = (winner) => {
+  if (winner == 'xwins') {
+    let winner = document.createElement('div');
+    winner.textContent = "Player 1 Wins!";
+    winner.setAttribute('id', 'winnerID');
+    eventHandler.playerSpace.appendChild(winner);
+    resetBoard();
+  } else if (winner == 'owins') {
+    let winner = document.createElement('div');
+    winner.textContent = "Player 2 Wins!";
+    winner.setAttribute('id', 'winnerID');
+    eventHandler.playerSpace.appendChild(winner);
+    resetBoard();
+  } else {
+    alert('something went wrong');
+  }
+}
 
- if ((eventHandler.board[0], eventHandler.board[1], eventHandler.board[2]).classList.contains('x'))
-    ((eventHandler.board[3], eventHandler.board[4], eventHandler.board[5]).classList.contains('x')) ||
-    ((eventHandler.board[6], eventHandler.board[7], eventHandler.board[8]).classList.contains('x')) ||
-    ((eventHandler.board[0], eventHandler.board[1], eventHandler.board[2]).classList.contains('x'))
-  {
-  console.log('YOU WIN');
- };
+const resetBoard = () => {
 
+  for (let i = 0; i < eventHandler.board.length; i++) {
+    eventHandler.board[i].removeAttribute('class');
+    eventHandler.board[i].setAttribute('class', 'cell_');
+  }
 
 }
 
   return {
-    //startNewGame,
+    resetBoard,
+    winGame,
     winLogic,
     checkMove,
     endRound,
     newRound,
     whoIsNext,
     currentPlayer,
-    getNextPlayer,
+    getNextPlayer
   };
 })();
 
-
-
-
 const DomListener = (() => {
-
-  // const startExitGame = (e) => {
-  //   e.stopPropagation();
-  //   if (e.target.closest('.card')) {
-  //     uiController.startingDialogController.toggleGameMode(e.target);
-  //   } else if (e.target.closest('.controls')) {
-  //     uiController.startingDialogController.startOrExitGame(e.target);
-  //   }
-  // };
-
- 
 
   const gridCellClick = (e) => {
     if (e.target.closest('.cell_')) {
@@ -245,7 +270,6 @@ const DomListener = (() => {
       const cellIndex = Array.from(eventHandler.displayBoard.children).indexOf(
       targetCell
      );
-
       GameBoard.fillCell(cellIndex);
     }
   };
@@ -261,132 +285,10 @@ const DomListener = (() => {
   return { gridCellClick, roundEnded_dialogClick };
 })();
 
-
-
-
 const addListener = (function () {
- 
-    //DomListener.startExitGame
+
   eventHandler.displayBoard.addEventListener('click', DomListener.gridCellClick);
 })();
 
 
-
-
-
-
-
-
-
-//   function setPlayers() {
-//      gameEvent(player1, player2);
-//      }
-     
-// const gameEvent = (player1, player2) => {
-// console.log(player1);
-//   let turnCount = document.getElementById("turn1");
-//   let turnCount2 = document.getElementById("turn2");
-
-//   let round = 0;
-
-//   let addListener = () => {
-//     gameBoard.board.forEach(element => {
-//       element.addEventListener('click', function(){cellSelect(element)});
-//     })};
-// addListener();
-
-// let cellSelect = (num) => {
-
-//   if (round % 2 == 0) {
-//     if (num.style.background == "red") {
-//       alert('error oppoent picked');
-//       return;
-//     } else if (num.style.background == 'blue') {
-//       alert('error: already selected');
-//       return;
-//     } else {
-//     turnCount2.innerText='';
-//     turnCount.innerText = "Your Turn";
-//     num.style.background = "blue";
-//     round++; 
-//     }
-//   } 
-//   else if (num.style.background == "blue") {
-//     alert('error opponent picked');
-//     return;
-//   } else if (num.style.background == "red") {
-//     alert('error: already selected');
-//     return;
-//   } else {
-//   turnCount.innerText='';
-//   turnCount2.innerText = "Your Turn";
-//   num.style.background = "red";
-//   round++;
-//   }
-//   winCondition();
-// }
-
-// return {addListener};
-// }
-
-
-// function winCondition() {
-//   let A1 = gameBoard.board[0];
-//   let A2 = gameBoard.board[1];
-//   let A3 = gameBoard.board[2];
-//   let B1 = gameBoard.board[3];
-//   let B2 = gameBoard.board[4];
-//   let B3 = gameBoard.board[5];
-//   let C1 = gameBoard.board[6];
-//   let C2 = gameBoard.board[7];
-//   let C3 = gameBoard.board[8];
-
-//     if (((A1.style.background == 'blue') && (A2.style.background == 'blue') && (A3.style.background == 'blue')) || 
-//         ((B1.style.background == 'blue') && (B2.style.background == 'blue') && (B3.style.background == 'blue')) ||
-//         ((C1.style.background == 'blue') && (C2.style.background == 'blue') && (C3.style.background == 'blue')) ||
-//         ((A1.style.background == 'blue') && (B1.style.background == 'blue') && (C1.style.background == 'blue')) ||
-//         ((A2.style.background == 'blue') && (B2.style.background == 'blue') && (C2.style.background == 'blue')) ||
-//         ((A3.style.background == 'blue') && (B3.style.background == 'blue') && (C3.style.background == 'blue')) ||
-//         ((A1.style.background == 'blue') && (B2.style.background == 'blue') && (C3.style.background == 'blue')) ||
-//         ((A3.style.background == 'blue') && (B2.style.background == 'blue') && (C1.style.background == 'blue'))) {
-//           console.log ('blue wins');
-//           clearBoard();
-//         } else if 
-//         (((A1.style.background == 'red') && (A2.style.background == 'red') && (A3.style.background == 'red')) || 
-//         ((B1.style.background == 'red') && (B2.style.background == 'red') && (B3.style.background == 'red')) ||
-//         ((C1.style.background == 'red') && (C2.style.background == 'red') && (C3.style.background == 'red')) ||
-//         ((A1.style.background == 'red') && (B1.style.background == 'red') && (C1.style.background == 'red')) ||
-//         ((A2.style.background == 'red') && (B2.style.background == 'red') && (C2.style.background == 'red')) ||
-//         ((A3.style.background == 'red') && (B3.style.background == 'red') && (C3.style.background == 'red')) ||
-//         ((A1.style.background == 'red') && (B2.style.background == 'red') && (C3.style.background == 'red')) ||
-//         ((A3.style.background == 'red') && (B2.style.background == 'red') && (C1.style.background == 'red'))) {
-//           console.log ('red wins');
-//           clearBoard();
-//         }}
-
-
-// function clearBoard() {
-//   gameBoard.board.forEach(element => {
-//    element.removeEventListener('click', gameEvent.addListener());
-
-    
-//       element.style.background = 'white';
-//       console.log('allclear');
-    
-//    });
-   
-//    document.getElementById("Player1").value = '';
-//    document.getElementById("Player2").value = '';
-//    textBox1 = document.getElementById("playerOne");
-//    textBox2 = document.getElementById("playerTwo");
-  
-//    textBox1.remove();
-//    textBox2.remove();
-  
-//   //  button = document.getElementById("submit");
-//   //  console.log(button);
-//   //  button.addEventListener('click', function(){setPlayers()});
-
-
-// }
 
